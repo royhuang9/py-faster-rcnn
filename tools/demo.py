@@ -37,7 +37,7 @@ NETS = {'vgg16': ('VGG16',
                   'ZF_faster_rcnn_final.caffemodel')}
 
 
-def vis_detections(im, class_name, dets, thresh=0.5):
+def vis_detections(im, class_names, dets, thresh=0.5):
     """Draw detected bounding boxes."""
     inds = np.where(dets[:, -1] >= thresh)[0]
     if len(inds) == 0:
@@ -57,14 +57,13 @@ def vis_detections(im, class_name, dets, thresh=0.5):
                           edgecolor='red', linewidth=3.5)
             )
         ax.text(bbox[0], bbox[1] - 2,
-                '{:s} {:.3f}'.format(class_name, score),
+                '{:s} {:.3f}'.format(class_names[i], score),
                 bbox=dict(facecolor='blue', alpha=0.5),
                 fontsize=14, color='white')
 
-    ax.set_title(('{} detections with '
-                  'p({} | box) >= {:.1f}').format(class_name, class_name,
-                                                  thresh),
-                  fontsize=14)
+    #ax.set_title(('{} detections with '
+    #              'p({} | box) >= {:.1f}').format(class_names[i], class_names[i],
+    #                                             thresh), fontsize=14)
     plt.axis('off')
     plt.tight_layout()
     plt.draw()
@@ -87,6 +86,8 @@ def demo(net, image_name):
     # Visualize detections for each class
     CONF_THRESH = 0.8
     NMS_THRESH = 0.3
+    cls_names = []
+    all_dets = []
     for cls_ind, cls in enumerate(CLASSES[1:]):
         cls_ind += 1 # because we skipped background
         cls_boxes = boxes[:, 4*cls_ind:4*(cls_ind + 1)]
@@ -95,7 +96,12 @@ def demo(net, image_name):
                           cls_scores[:, np.newaxis])).astype(np.float32)
         keep = nms(dets, NMS_THRESH)
         dets = dets[keep, :]
-        vis_detections(im, cls, dets, thresh=CONF_THRESH)
+        cls_names.append([CLASSES[cls_ind]] * len(keep))
+        all_dets.append(dets)
+    
+    all_dets = np.vstack((all_dets))
+    cls_names = [i for sl in cls_names for i in sl]
+    vis_detections(im, cls_names, all_dets, thresh=CONF_THRESH)
 
 def parse_args():
     """Parse input arguments."""
